@@ -1,0 +1,54 @@
+{
+  "name": "chess-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server for playing chess against the Lichess AI from any AI agent. Pick your color, a strength and an opening; the board is drawn in the chat after every move. Install from GitHub.",
+  "license": "MIT",
+  "author": "swlittles",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/swlittles/chess-mcp.git"
+  },
+  "homepage": "https://github.com/swlittles/chess-mcp#readme",
+  "bugs": "https://github.com/swlittles/chess-mcp/issues",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "chess",
+    "lichess",
+    "claude",
+    "cursor",
+    "codex"
+  ],
+  "type": "module",
+  "bin": {
+    "chess-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "data",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20.3"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && chmod +x dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "openings:update": "node scripts/build-openings.mjs",
+    "check:public": "node scripts/check-public.mjs",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "chess.js": "^1.4.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}
