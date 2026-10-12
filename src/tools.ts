@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { App } from "./app.js";
 import { findOpenings } from "./chess/openings.js";
 import { LichessError, NotConnected, TokenRejected } from "./lichess/client.js";
-import { UserError } from "./play.js";
+import { UserError, type Report } from "./play.js";
 
 const gameId = z
   .string()
@@ -17,7 +17,7 @@ const LOGIN_WAIT_MS = 45_000;
 
 export function registerTools(server: McpServer, app: App, options: { loginWaitMs?: number } = {}): void {
   const loginWaitMs = options.loginWaitMs ?? LOGIN_WAIT_MS;
-  const play = (fn: () => Promise<string>) => run(app, fn, loginWaitMs);
+  const play = (fn: () => Promise<string | Report>) => run(app, fn, loginWaitMs);
 
   server.registerTool(
     "new_game",
@@ -152,7 +152,7 @@ export function registerTools(server: McpServer, app: App, options: { loginWaitM
   );
 }
 
-async function run(app: App, fn: () => Promise<string>, loginWaitMs: number, opts: { startLogin?: boolean; statusOnly?: boolean } = {}): Promise<CallToolResult> {
+async function run(app: App, fn: () => Promise<string | Report>, loginWaitMs: number, opts: { startLogin?: boolean; statusOnly?: boolean } = {}): Promise<CallToolResult> {
   try {
     if (!opts.statusOnly && !(await app.currentToken())) {
       const pending = app.login.current ?? (opts.startLogin ? await app.login.start() : undefined);
@@ -162,7 +162,12 @@ async function run(app: App, fn: () => Promise<string>, loginWaitMs: number, opt
         if (!signedIn) return await needLogin(app, "Lichess isn't connected yet.");
       }
     }
-    return text(await fn());
+    const result = await fn();
+    if (typeof result === "string") return text(result);
+    // The board picture goes along too, for clients that show images from tool results.
+    return {
+      content: [{ type: "text", text: result.text }, ...(result.image ? [{ type: "image" as const, data: result.image.toString("base64"), mimeType: "image/png" }] : [])],
+    };
   } catch (error) {
     if (error instanceof NotConnected) return needLogin(app, "Lichess isn't connected yet.");
     if (error instanceof TokenRejected) {

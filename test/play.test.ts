@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 import { makeHarness, type Harness } from "./helpers/harness.js";
 
@@ -38,6 +39,29 @@ describe("playing", () => {
     expect(move.text).toMatch(/Moves: 1\. e4 \w+/);
     expect(move.text).toContain("Your move (White).");
     expect(move.text).toMatch(/Game: http:\/\/127\.0\.0\.1:\d+\/\w{8}$/m);
+  });
+
+  it("draws the board as a picture: attached, and saved for a Markdown image line", async () => {
+    h = await makeHarness();
+    const start = await h.call("new_game", { color: "white" });
+    expect(start.images).toHaveLength(1);
+    expect(start.images[0]!.mimeType).toBe("image/png");
+    const png = Buffer.from(start.images[0]!.data, "base64");
+    expect(png.subarray(1, 4).toString()).toBe("PNG");
+    const path = start.text.match(/^!\[Chess board\]\((.+\.png)\)$/m)![1]!;
+    expect(existsSync(path)).toBe(true);
+    expect(readFileSync(path).equals(png)).toBe(true);
+    // A new position gets a new file, so pictures already in the chat don't change.
+    const move = await h.call("make_move", { move: "e4" });
+    expect(move.text.match(/^!\[Chess board\]\((.+\.png)\)$/m)![1]).not.toBe(path);
+  });
+
+  it("leaves the picture out with CHESS_BOARD_IMAGE=0", async () => {
+    h = await makeHarness({ env: { CHESS_BOARD_IMAGE: "0" } });
+    const start = await h.call("new_game", { color: "white" });
+    expect(start.images).toEqual([]);
+    expect(start.text).not.toContain("![Chess board]");
+    expect(start.text).toContain("```text");
   });
 
   it("waits for the AI's first move when the user is Black, and draws the board from Black's side", async () => {

@@ -1,8 +1,12 @@
 // Playing against the Lichess AI through the Board API: start a game, make moves, and wait for the
 // AI's reply on the game's event stream.
 
+import { createHash } from "node:crypto";
+import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { Chess, type Move } from "chess.js";
 import { renderBoard, type BoardStyle } from "./chess/board.js";
+import { boardPng } from "./chess/image.js";
 import { IllegalMove, numberedMoves, parseMove, replay, START_FEN, turnColor, uciOf, type Color, type Position } from "./chess/game.js";
 import { epdOf, findOpenings, openingAt, type Opening } from "./chess/openings.js";
 import { LichessError, Unavailable, type LichessClient } from "./lichess/client.js";
@@ -32,6 +36,12 @@ export interface GameFull {
   state: GameState;
 }
 
+/** What a game action returns: the text for the agent and, when enabled, the board as a PNG. */
+export interface Report {
+  text: string;
+  image?: Buffer;
+}
+
 /** A mistake the user can fix (bad move, no game): reported to the agent as a tool error. */
 export class UserError extends Error {}
 
@@ -41,6 +51,8 @@ export interface PlayOptions {
   client: LichessClient;
   store: Store;
   boardStyle: BoardStyle;
+  /** Where board pictures are saved. Without it, results only have the text board. */
+  boardImageDir?: string;
   defaultLevel: number;
   /** How long to wait for the AI to reply before reporting that it's still thinking. */
   replyTimeoutMs?: number;
@@ -53,7 +65,7 @@ export class Play {
     this.replyTimeoutMs = o.replyTimeoutMs ?? 30_000;
   }
 
-  async newGame(args: { color: Color | "random"; level?: number; opening?: string }): Promise<string> {
+  async newGame(args: { color: Color | "random"; level?: number; opening?: string }): Promise<Report> {
     const level = args.level ?? this.o.defaultLevel;
     let opening: Opening | undefined;
     let fen: string | undefined;
@@ -115,7 +127,7 @@ export class Play {
     }
   }
 
-  async move(input: string, gameId?: string): Promise<string> {
+  async move(input: string, gameId?: string): Promise<Report> {
     const id = await this.resolveGame(gameId);
     const stream = await GameStream.open(this.o.client, id);
     try {
@@ -146,7 +158,7 @@ export class Play {
     }
   }
 
-  async show(gameId?: string): Promise<string> {
+  async show(gameId?: string): Promise<Report> {
     const id = await this.resolveGame(gameId);
     const stream = await GameStream.open(this.o.client, id);
     try {
@@ -156,7 +168,7 @@ export class Play {
     }
   }
 
-  async resign(gameId?: string): Promise<string> {
+  async resign(gameId?: string): Promise<Report> {
     const id = await this.resolveGame(gameId);
     const stream = await GameStream.open(this.o.client, id);
     try {
@@ -172,7 +184,7 @@ export class Play {
     }
   }
 
-  async takeback(gameId?: string): Promise<string> {
+  async takeback(gameId?: string): Promise<Report> {
     const id = await this.resolveGame(gameId);
     const stream = await GameStream.open(this.o.client, id);
     try {
@@ -255,7 +267,7 @@ export class Play {
   }
 
   /** The text shown after every action. `since`: describe the moves from this ply on. */
-  private report(stream: GameStream, note: GameNote, extra: { intro?: (string | undefined)[]; since?: number; stillThinking?: boolean }): string {
+  private report(stream: GameStream, note: GameNote, extra: { intro?: (string | undefined)[]; since?: number; stillThinking?: boolean }): Report {
     const { full, state } = stream;
     const position = this.position(stream);
     const { chess, moves } = position;
@@ -267,7 +279,14 @@ export class Play {
       if (recent.length) lines.push(recent.join(" "));
     }
 
-    lines.push("", "```text", renderBoard(chess, { perspective: note.color, lastMove: last, style: this.o.boardStyle }), "```", "");
+    let image: Buffer | undefined;
+    lines.push("");
+    if (this.o.boardImageDir) {
+      image = boardPng(chess, { perspective: note.color, lastMove: last });
+      const path = saveBoard(this.o.boardImageDir, `${full.id}-${moves.length}`, image);
+      lines.push(`![Chess board](${/\s/.test(path) ? `<${path}>` : path})`, "");
+    }
+    lines.push("```text", renderBoard(chess, { perspective: note.color, lastMove: last, style: this.o.boardStyle }), "```", "");
 
     if (position.startFen !== START_FEN) {
       lines.push(note.opening ? `Started from: ${note.opening.name} (${note.opening.eco}): ${note.opening.pgn}` : `Started from the position ${position.startFen}`);
@@ -286,7 +305,7 @@ export class Play {
       if (state.wtakeback || state.btakeback) lines.push("A takeback is being proposed.");
     }
     lines.push(`Lichess AI level ${note.level || "?"} · Game: ${this.o.client.baseUrl}/${full.id}${note.color === "black" ? "/black" : ""}`);
-    return lines.join("\n");
+    return { text: lines.join("\n"), image };
   }
 }
 
@@ -379,6 +398,28 @@ export class GameStream {
     this.full = full;
     this.state = full.state;
   }
+}
+
+const KEEP_BOARDS_MS = 14 * 24 * 3600_000;
+
+/**
+ * Saves a board picture and returns its path. Every position gets its own file, so a picture
+ * already shown in the chat never changes. Pictures older than two weeks are deleted.
+ */
+function saveBoard(dir: string, name: string, png: Buffer): string {
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const path = join(dir, `${name}-${createHash("sha256").update(png).digest("hex").slice(0, 8)}.png`);
+  writeFileSync(path, png, { mode: 0o600 });
+  const cutoff = Date.now() - KEEP_BOARDS_MS;
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith(".png")) continue;
+    try {
+      if (statSync(join(dir, file)).mtimeMs < cutoff) rmSync(join(dir, file), { force: true });
+    } catch {
+      // already gone
+    }
+  }
+  return path;
 }
 
 function inProgress(state: GameState): boolean {

@@ -16,7 +16,7 @@ export interface Harness {
   client: Client;
   /** Sign-in links the server tried to open in a browser. */
   opened: string[];
-  call(name: string, args?: Record<string, unknown>): Promise<{ text: string; isError: boolean }>;
+  call(name: string, args?: Record<string, unknown>): Promise<{ text: string; isError: boolean; images: { data: string; mimeType: string }[] }>;
   close(): Promise<void>;
 }
 
@@ -43,8 +43,10 @@ export async function makeHarness(options: { token?: string | null; env?: Record
     opened,
     async call(name, args = {}) {
       const result = await client.callTool({ name, arguments: args });
-      const text = (result.content as { type: string; text: string }[]).map((c) => c.text).join("\n");
-      return { text, isError: Boolean(result.isError) };
+      const content = result.content as { type: string; text?: string; data?: string; mimeType?: string }[];
+      const text = content.filter((c) => c.type === "text").map((c) => c.text).join("\n");
+      const images = content.filter((c) => c.type === "image").map((c) => ({ data: c.data!, mimeType: c.mimeType! }));
+      return { text, isError: Boolean(result.isError), images };
     },
     async close() {
       app.login.cancel();

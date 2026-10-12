@@ -4,23 +4,10 @@ Play chess against the [Lichess](https://lichess.org) AI from inside your AI age
 
 Tell your agent "let's play chess". It asks which color you want, starts a game on Lichess and shows the board after every move. You say your moves ("knight to f3", "Nf3", "castle"), and the agent plays them and shows the AI's reply.
 
+<img src="docs/board.png" width="320" alt="The board after 1. e4 e5 2. Nf3 Nc6 3. Bc4 Bc5 4. c3 Nf6, with the last move highlighted">
+
 ```text
 You played c3. The Lichess AI played Nf6.
-
-   a  b  c  d  e  f  g  h
-8  ♜  ·  ♝  ♛  ♚  · [·] ♜  8
-7  ♟  ♟  ♟  ♟  ·  ♟  ♟  ♟  7
-6  ·  ·  ♞  ·  · [♞] ·  ·  6
-5  ·  ·  ♝  ·  ♟  ·  ·  ·  5
-4  ·  ·  ♗  ·  ♙  ·  ·  ·  4
-3  ·  ·  ♙  ·  ·  ♘  ·  ·  3
-2  ♙  ♙  ·  ♙  ·  ♙  ♙  ♙  2
-1  ♖  ♘  ♗  ♕  ♔  ·  ·  ♖  1
-   a  b  c  d  e  f  g  h
-
-White ♔♕♖♗♘♙   Black ♚♛♜♝♞♟
-
-Started from: Italian Game (C50): 1. e4 e5 2. Nf3 Nc6 3. Bc4
 Moves: 3... Bc5 4. c3 Nf6
 Opening: Italian Game: Classical Variation (C54)
 Your move (White).
@@ -30,7 +17,7 @@ Lichess AI level 3 · Game: https://lichess.org/AbCd1234
 - **Pick your side.** White, Black or random. If you don't say, the agent asks.
 - **Pick a strength.** The Lichess AI levels 1 (beginner) to 8 (strongest). The default is 3.
 - **Pick an opening.** For example "Play the Najdorf against me", "I want to practice the London" or "start from the Caro-Kann". The game starts from that opening's main position. The list is the [Lichess opening list](https://github.com/lichess-org/chess-openings), about 3,800 named lines.
-- **See the board every turn.** It's drawn in the chat, with the last move in [brackets]. Every game is also a real Lichess game, so you can keep `lichess.org/<game>` open in a browser tab.
+- **See the board every turn.** The board is drawn as a picture from your side, with the last move highlighted and a king in check marked. Apps that show images from local files (T3 Code, for example) show the picture in the chat. Terminal agents like Claude Code show a text board instead. Every game is also a real Lichess game, so you can keep `lichess.org/<game>` open in a browser tab.
 - **Nothing to host.** The server runs on your computer and talks to Lichess directly. You need a free Lichess account.
 
 ## Quick start
@@ -119,7 +106,8 @@ All optional, set in the MCP config's `env`:
 |---|---|---|
 | `LICHESS_TOKEN` | | A personal API token instead of signing in through the browser |
 | `CHESS_DEFAULT_LEVEL` | `3` | The AI's strength (1-8) when you don't name one |
-| `CHESS_BOARD_STYLE` | `unicode` | `letters` draws pieces as `KQRBNP` (White) and `kqrbnp` (Black), for fonts where the chess symbols misalign |
+| `CHESS_BOARD_IMAGE` | `1` | `0` turns off the board picture (saved under `~/.chess-mcp/boards` and attached to results); only the text board is sent |
+| `CHESS_BOARD_STYLE` | `unicode` | The text board: `letters` draws pieces as `KQRBNP` (White) and `kqrbnp` (Black), for fonts where the chess symbols misalign |
 | `CHESS_OPEN_BROWSER` | `1` | `0`: don't open the sign-in page automatically; only show the link |
 | `CHESS_MCP_HOME` | `~/.chess-mcp` | Where game notes (and, outside macOS, the token) are kept |
 | `CHESS_AUTO_UPDATE` | `1` | `0` turns off automatic updates |
@@ -145,8 +133,9 @@ npm ci
 npm test                 # unit tests and end-to-end tests over MCP against a fake Lichess
 npm run build && node scripts/call-tool.mjs show_board '{}'   # one tool against real Lichess
 npm run openings:update  # refresh data/openings.tsv from lichess-org/chess-openings
+node scripts/build-pieces.mjs <folder>  # regenerate src/chess/pieces.ts from the Cburnett SVGs
 ```
 
 ## License
 
-MIT. The opening list in `data/openings.tsv` comes from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0). This project isn't affiliated with Lichess. If you enjoy playing there, consider [supporting Lichess](https://lichess.org/patron).
+MIT. The opening list comes from [lichess-org/chess-openings](https://github.com/lichess-org/chess-openings) (CC0). The chess pieces are Colin M.L. Burnett's, used under the BSD license. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). This project isn't affiliated with Lichess. If you enjoy playing there, consider [supporting Lichess](https://lichess.org/patron).

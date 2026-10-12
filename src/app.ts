@@ -1,6 +1,7 @@
 // Everything a running server needs: config, the Lichess connection (token, sign-in, client) and
 // the game logic.
 
+import { join } from "node:path";
 import type { Config } from "./config.js";
 import { LoginFlow, SCOPES, type Account } from "./lichess/auth.js";
 import { LichessClient, type ClientOptions } from "./lichess/client.js";
@@ -43,6 +44,7 @@ export class App {
       client: this.client,
       store: this.store,
       boardStyle: config.boardStyle,
+      boardImageDir: config.boardImages ? join(config.home, "boards") : undefined,
       defaultLevel: config.defaultLevel,
       replyTimeoutMs: options.replyTimeoutMs,
     });

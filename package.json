@@ -1,6 +1,6 @@
 {
   "name": "chess-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "MCP server for playing chess against the Lichess AI from any AI agent. Pick your color, a strength and an opening; the board is drawn in the chat after every move. Install from GitHub.",
   "license": "MIT",
@@ -28,7 +28,8 @@
     "dist",
     "data",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "engines": {
     "node": ">=22.12"
@@ -43,6 +44,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "@resvg/resvg-js": "^2.6.2",
     "chess.js": "^1.4.0",
     "zod": "^3.25.76"
   },

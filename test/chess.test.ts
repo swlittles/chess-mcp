@@ -1,6 +1,7 @@
 import { Chess } from "chess.js";
 import { describe, expect, it } from "vitest";
 import { renderBoard } from "../src/chess/board.js";
+import { boardSvg } from "../src/chess/image.js";
 import { IllegalMove, numberedMoves, parseMove, replay } from "../src/chess/game.js";
 import { epdOf, findOpenings, openingAt } from "../src/chess/openings.js";
 
@@ -90,6 +91,23 @@ describe("renderBoard", () => {
     const board = renderBoard(new Chess(), { perspective: "white" });
     expect(board).toContain("8  ♜  ♞  ♝  ♛  ♚  ♝  ♞  ♜  8");
     expect(board).toContain("White ♔♕♖♗♘♙");
+  });
+});
+
+describe("boardSvg", () => {
+  it("highlights the last move and a king in check", () => {
+    const { chess, moves } = replay("startpos", "e2e4 e7e5 d1h5 b8c6 f1c4 g8f6 h5f7");
+    const svg = boardSvg(chess, { perspective: "white", lastMove: moves.at(-1) });
+    expect(svg.match(/fill="#9bc700"/g)).toHaveLength(2);
+    expect(svg).toContain('fill="url(#check)"');
+    expect(svg.match(/<g transform=/g)).toHaveLength(31); // Qxf7# took a pawn
+  });
+
+  it("puts the coordinates on the player's edges", () => {
+    const white = boardSvg(new Chess(), { perspective: "white" });
+    const black = boardSvg(new Chess(), { perspective: "black" });
+    expect(white.match(/text-anchor="start">(\d)</)![1]).toBe("8");
+    expect(black.match(/text-anchor="start">(\d)</)![1]).toBe("1");
   });
 });
 

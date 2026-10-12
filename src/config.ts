@@ -10,6 +10,8 @@ export interface Config {
   /** Where the saved token (outside macOS), the account name and game notes live. */
   home: string;
   boardStyle: BoardStyle;
+  /** Draw the board as a picture too (on by default). */
+  boardImages: boolean;
   defaultLevel: number;
   /** Open the sign-in page in the browser (off in tests and headless setups). */
   openBrowser: boolean;
@@ -22,6 +24,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     envToken: env.LICHESS_TOKEN?.trim() || undefined,
     home: env.CHESS_MCP_HOME?.trim() || join(homedir(), ".chess-mcp"),
     boardStyle: env.CHESS_BOARD_STYLE?.trim().toLowerCase() === "letters" ? "letters" : "unicode",
+    boardImages: !["0", "false", "no", "off"].includes(env.CHESS_BOARD_IMAGE?.trim().toLowerCase() ?? ""),
     defaultLevel: Number.isInteger(level) && level >= 1 && level <= 8 ? level : 3,
     openBrowser: !["0", "false", "no", "off"].includes(env.CHESS_OPEN_BROWSER?.trim().toLowerCase() ?? ""),
   };

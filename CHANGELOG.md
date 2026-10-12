@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.2.0
+
+- The board is now a picture: the classic Lichess colors and pieces, drawn from your side, with the last move highlighted and a king in check marked. It's attached to every game result and saved as a PNG, so apps that show Markdown images from local files show it right in the chat. The text board is still there for terminals. `CHESS_BOARD_IMAGE=0` turns the picture off.
+
 ## 0.1.0
 
 First release.
