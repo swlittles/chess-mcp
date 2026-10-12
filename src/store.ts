@@ -43,7 +43,7 @@ export class Store {
     for (const id of ids.slice(0, Math.max(0, ids.length - 100))) delete data.games[id];
     mkdirSync(this.home, { recursive: true, mode: 0o700 });
     const tmp = `${this.path}.${process.pid}.tmp`;
-    writeFileSync(tmp, JSON.stringify(data, null, 2));
+    writeFileSync(tmp, JSON.stringify(data, null, 2), { mode: 0o600 });
     renameSync(tmp, this.path);
   }
 }
