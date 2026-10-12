@@ -35,7 +35,7 @@ Lichess AI level 3 · Game: https://lichess.org/AbCd1234
 
 ## Quick start
 
-You need [Node.js](https://nodejs.org) 20 or later, git and a free [Lichess account](https://lichess.org/signup).
+You need [Node.js](https://nodejs.org) 22 or later, git and a free [Lichess account](https://lichess.org/signup).
 
 **1. Download and build it:**
 
