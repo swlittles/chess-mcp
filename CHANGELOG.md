@@ -14,3 +14,4 @@ First release.
 - Follows Lichess's API rules: one request at a time, a full minute's pause after a 429, retries for network and server errors, and a move whose answer was lost is never played twice.
 - `takeback`, `resign`, `list_games`, `show_board`, `lichess_status`, `lichess_logout`.
 - Updates itself from GitHub releases.
+- Needs Node.js 22.12 or later.
